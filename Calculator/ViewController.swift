@@ -11,63 +11,11 @@ import UIKit
 class ViewController: UIViewController {
 
     @IBOutlet weak var display: UILabel!
+    @IBOutlet weak var history: UILabel!
     
     var userIsUnTheMiddleOfTypingANumber = false
+    var brain = CalculatorBrain()
 
-    @IBAction func appendDigit(sender: UIButton) {
-        let digit = sender.currentTitle!
-        if userIsUnTheMiddleOfTypingANumber {
-          display.text = display.text! + digit
-        }
-        else {
-            display.text = digit
-            userIsUnTheMiddleOfTypingANumber = true
-        }
-        
-        //print("digit = \(digit)")
-        
-    }
-    @IBAction func operate(sender: UIButton) {
-        let operation = sender.currentTitle!
-        
-        if userIsUnTheMiddleOfTypingANumber {
-            enter()
-        }
-        
-        switch operation {
-        case "×": performOperation({ $0 * $1 })
-            case "÷": performOperation { $1 / $0 }
-            case "+": performOperation { $0 + $1 }
-            case "−": performOperation { $1 - $0 }
-            case "√": performOperation { sqrt($0)}
-        default: break
-        }
-        
-    }
-   
-    func performOperation(operation: (Double, Double) -> Double) {
-        if operandStack.count >= 2 {
-            displayValue = operation(operandStack.removeLast(), operandStack.removeLast())
-            enter()
-        }
-    }
-    
-    private func performOperation(operation: Double -> Double) {
-        if operandStack.count >= 1 {
-            displayValue = operation(operandStack.removeLast())
-            enter()
-        }
-    }
-    
-    var operandStack = Array<Double>()
-    
-    @IBAction func enter() {
-        userIsUnTheMiddleOfTypingANumber = false
-        operandStack.append(displayValue)
-        print("operandStack = \(operandStack)")
-        
-    }
-    
     var displayValue: Double {
         get {
             return NSNumberFormatter().numberFromString(display.text!)!.doubleValue
@@ -78,6 +26,74 @@ class ViewController: UIViewController {
             userIsUnTheMiddleOfTypingANumber = false
         }
     }
+
     
+    @IBAction func appendDigit(sender: UIButton) {
+        let digit = sender.currentTitle!
+        if userIsUnTheMiddleOfTypingANumber {
+            switch digit {
+            case ".":
+                if display.text!.rangeOfString(".") == nil {
+                  display.text = display.text! + digit
+                }
+            case "π":
+                  enter()
+                  display.text = "\(M_PI)"
+                  enter()
+            default:
+              display.text = display.text! + digit
+            }
+        }
+        else {
+            if digit == "π" {
+                  display.text = "\(M_PI)"
+                  enter()
+            }
+            else {
+            display.text = digit
+            userIsUnTheMiddleOfTypingANumber = true
+            }
+        }
+        
+        //print("digit = \(digit)")
+        history.text = brain.history
+        
+    }
+    @IBAction func operate(sender: UIButton) {
+        if userIsUnTheMiddleOfTypingANumber {
+            enter()
+        }
+        
+        if let operation = sender.currentTitle {
+            if let result = brain.performOperation(operation) {
+             displayValue = result
+            }
+            else {
+                // todo: displayValue should accept Optional and display NaN to user
+                displayValue = 0
+            }
+        }
+        history.text = brain.history
+    }
+    
+    @IBAction func clear(){
+        brain.clear()
+        history.text = ""
+        displayValue = 0.0
+        
+    }
+    @IBAction func enter() {
+        userIsUnTheMiddleOfTypingANumber = false
+        if let result = brain.pushOperand(displayValue) {
+            displayValue = result
+        }
+        else {
+            // todo: displayValue should accept Optional and display NaN to user
+            displayValue = 0
+        }
+        
+    }
+    
+       
 }
 
